@@ -125,12 +125,13 @@ export function createCloudStudyStore(uid: string, storage: Storage, transport: 
     store.setState({ ...view, sync: { mode: 'cloud', pending: disk.pending.length, busy, error }, discardPending: conflict ? discardConflict : undefined });
   }
   function discardConflict() {
-    if (running || !conflict) return;
+    if (stopped || running || !conflict) return;
     save({ ...disk, pending: disk.pending.slice(1) });
     conflict = false;
     void sync();
   }
   function save(next: typeof disk) {
+    if (stopped) throw new Error('계정이 변경되었습니다.');
     // A full disk never becomes a false "saved" UI state.
     storage.setItem(cloudStorageKey(uid), JSON.stringify(next));
     disk = next;

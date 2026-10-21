@@ -3,8 +3,12 @@ import type { StudyState } from './store.ts';
 
 // Existing local records stay on this device. All newly created decks go to cloud.
 export function combineStudyStores(local: StoreApi<StudyState>, cloud: StoreApi<StudyState>) {
+  let stopped = false;
   const isLocal = (id: string) => !cloud.getState().decks.some(deck => deck.id === id) && local.getState().decks.some(deck => deck.id === id);
-  const owner = (id: string) => isLocal(id) ? local.getState() : cloud.getState();
+  const owner = (id: string) => {
+    if (stopped) throw new Error('계정이 변경되었습니다.');
+    return isLocal(id) ? local.getState() : cloud.getState();
+  };
   const snapshot = (): StudyState => {
     const remote = cloud.getState();
     const legacy = local.getState();
@@ -25,5 +29,5 @@ export function combineStudyStores(local: StoreApi<StudyState>, cloud: StoreApi<
   const publish = () => store.setState(snapshot());
   const unsubscribeLocal = local.subscribe(publish);
   const unsubscribeCloud = cloud.subscribe(publish);
-  return { store, stop: () => { unsubscribeLocal(); unsubscribeCloud(); } };
+  return { store, stop: () => { stopped = true; unsubscribeLocal(); unsubscribeCloud(); } };
 }

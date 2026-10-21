@@ -1,9 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generationInput, generatedCards, createGenerationBody, requestGemini, geminiFailure } from '../src/lib/gemini.ts';
+import { GEMINI_API_VERSION, generationInput, generatedCards, createGenerationBody, requestGemini, geminiFailure } from '../src/lib/gemini.ts';
+import { generationSettings } from '../src/lib/server/generation-settings.ts';
 
 const input = generationInput.parse({ title: '영어 기초 동사', category: '외국어' });
 const options = () => ({ key: 'test-key', model: 'test-model', input, signal: AbortSignal.timeout(5000) });
+
+test('configured model prefixes normalize to a v1beta model path and the key stays in a header', async () => {
+  const settings = generationSettings({ GEMINI_MODEL: ' models/gemini-3.1-flash-lite ' });
+  assert.equal(GEMINI_API_VERSION, 'v1beta');
+  await requestGemini({ ...options(), model: settings.model }, async (url, init) => {
+    assert.equal(url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent');
+    assert.equal(url.includes('test-key'), false);
+    assert.equal(init.headers['x-goog-api-key'], 'test-key');
+    assert.equal(init.body.includes('test-key'), false);
+    return new Response('{}');
+  });
+});
 
 test('title and category are enough; notes remain optional', () => {
   assert.equal(input.text, '');

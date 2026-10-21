@@ -72,3 +72,9 @@ body{font-size:16px;line-height:1.65;letter-spacing:-.3px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}.ai-loading-spinner{animation-duration:2s}}
 
 .goal-criteria,.study-completion-stats span,.study-completion-subtitle,.study-completion-goal p{color:#766680}
+
+.study-boot{min-height:100vh;height:auto;flex-direction:column;text-align:center;padding:32px 20px}
+.study-boot p{max-width:560px;margin:0;line-height:1.8;overflow-wrap:anywhere}
+.study-boot p+p{font-size:14px}
+.study-boot-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;width:min(100%,360px)}
+.study-boot-actions button{flex:1;min-width:130px}

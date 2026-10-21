@@ -36,7 +36,7 @@ env:
     value: "gemini-3.1-flash-lite"
     availability: [ RUNTIME ]
   - variable: AI_GENERATION_ENABLED
-    value: "false"
+    value: "true"
     availability: [ RUNTIME ]
   - variable: AI_GENERATION_UNLIMITED
     value: "false"
@@ -78,6 +78,11 @@ env:
       - RUNTIME
 
 
-# Gemini is disabled. Add a GEMINI_API_KEY secret reference only after Secret Manager approval.
+  # Secret version 1 is enabled; runtime account has secret-scoped Accessor.
+  - variable: GEMINI_API_KEY
+    secret: moa-gemini-api-key
+    availability: [ RUNTIME ]
+
+# AI activation requires a separately approved rollout.
 # Set SITE_OPERATOR_NAME and SUPPORT_EMAIL before inviting testers.
 # Keep PRIVACY_POLICY_CONFIRMED=false until the policy has been reviewed.

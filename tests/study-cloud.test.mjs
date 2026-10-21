@@ -241,6 +241,20 @@ test('conflicting queued rating stays durable until explicitly discarded', async
   client.stop();
 });
 
+test('stopped sessions cannot discard a durable conflict after writer ownership is released', async () => {
+  const db = memoryDatabase(); await applyStudyCommand(db, create());
+  const disk = storage(), client = createCloudStudyStore('a', disk, transport(db));
+  await client.sync(); await applyStudyCommand(db, rate());
+  await client.store.getState().rate('deck', 0, false, client.store.getState().decks[0].cards[0]);
+  await client.sync();
+  const discard = client.store.getState().discardPending;
+  assert.ok(discard);
+  client.stop();
+  const before = disk.getItem(cloudStorageKey('a'));
+  discard();
+  assert.equal(disk.getItem(cloudStorageKey('a')), before);
+});
+
 test('retrying a deterministic generated deck ID does not enqueue duplicate card creation', async () => {
   const db = memoryDatabase(); const disk = storage();
   const client = createCloudStudyStore('a', disk, transport(db, () => true));
@@ -317,6 +331,9 @@ test('legacy records remain usable while new AI decks go to cloud, with account 
   assert.equal(db.get('decks/old'), undefined);
   assert.equal(local.getState().decks.length, 1);
   combined.stop(); cloud.stop();
+  const beforeStop = disk.getItem('moa-study-user-a');
+  assert.throws(() => combined.store.getState().removeDeck('old'), /계정이 변경/);
+  assert.equal(disk.getItem('moa-study-user-a'), beforeStop);
   const reloadLocal = createStudyStore('a', disk);
   const reloadCloud = createCloudStudyStore('a', disk, transport(db));
   const reload = combineStudyStores(reloadLocal, reloadCloud.store);

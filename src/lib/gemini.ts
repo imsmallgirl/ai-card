@@ -25,6 +25,7 @@ export const materialGeneratedCards = z.object({title:z.string().trim().min(1).m
 })).min(1).max(20)});
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
+export const GEMINI_API_VERSION = 'v1beta';
 
 export { geminiFailure } from './gemini-errors.ts';
 
@@ -75,7 +76,7 @@ export async function requestGemini(
     signal.throwIfAborted();
     await beforeAttempt?.();
     signal.throwIfAborted();
-    const response = await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    const response = await fetcher(`https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body,

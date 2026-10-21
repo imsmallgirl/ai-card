@@ -11,7 +11,8 @@
     "test:firestore": "firebase emulators:exec --only firestore --project demo-moa-study \"node --experimental-strip-types --test tests/firestore/*.test.mjs\"",
     "test:http": "node --test tests/http/*.test.mjs",
     "check:release": "node --experimental-strip-types scripts/check-release.mjs",
-    "check:bundle": "node scripts/check-bundle-secrets.mjs"
+    "check:bundle": "node scripts/check-bundle-secrets.mjs",
+    "check:gemini": "node --experimental-strip-types scripts/check-gemini.mjs"
   },
   "dependencies": {
     "firebase": "13.0.0",
