@@ -1,59 +1,55 @@
-# 모아 — AI 학습 앱
+# 모아 — 학습 카드 MVP
 
-Next.js App Router · React · TypeScript · Zustand · Firebase Authentication · Gemini · Zod
+Next.js App Router · React · TypeScript · Firebase Authentication/Admin/Firestore · Gemini · Zustand · Zod.
 
-## 실행과 로그인
+## 시작하기
 
-Node.js 20.9 이상이 필요합니다. 테스트는 Node.js 24 기준으로 확인했습니다.
+Node24 권장. 의존성은 package-lock 기준으로 설치합니다.
 
 ```sh
-npm install
+npm ci
+# .env.local이 없는 경우에만 .env.example을 복사하고 직접 설정합니다.
 cp .env.example .env.local
 npm run dev
 ```
 
-이미 `.env.local`을 설정했다면 복사 명령으로 덮어쓰지 마세요. 개발 서버가 출력하는 localhost 주소로 접속합니다.
+기존 `.env.local`을 덮어쓰지 마세요. Google 로그인 설정과 서버 ADC/IAM이 필요합니다. 서버는 서명·만료뿐 아니라 폐기/삭제된 계정의 ID 토큰도 확인합니다.
 
-1. Firebase Console에서 프로젝트의 웹 앱을 등록합니다.
-2. 웹 앱 설정의 apiKey/authDomain/projectId/appId를 `.env.local`의 `NEXT_PUBLIC_FIREBASE_*`에 입력합니다.
-3. Authentication → Sign-in method에서 Google을 활성화합니다.
-4. Authentication → Settings → Authorized domains에 localhost와 운영 도메인을 추가합니다.
-5. `.env.local`에 `GEMINI_API_KEY`를 설정합니다. 기본 `GEMINI_MODEL`은 `gemini-3.5-flash`입니다.
-6. 환경 변수 변경 후 개발 서버를 재시작합니다. 운영 환경은 재빌드해야 합니다.
+## 현재 기능
 
-Firebase 웹 앱 구성은 공개 설정입니다. 서비스 계정 비밀키를 `NEXT_PUBLIC_` 변수에 넣지 마세요. Firebase 설정이 없으면 로그인 설정 안내만 표시되며 학습 기능은 열리지 않습니다.
+- 로그아웃 시 공개 랜딩, Google 로그인 후 UID별 개인 학습 공간. 공유 기능 없음.
+- **자료로 만들기**(기본): AI 없는 규칙 추출, 객관식/Q&A/Markdown 지원, 수정·제외 후 저장. 사용자가 선택할 때만 AI 추출.
+- **AI 자동 생성**: 제목·카테고리·목적·난이도·1~20장. 단어 암기 요청은 영어 단어/한국어 뜻 형식.
+- **직접 만들기**: 직접 질문/답 입력, 기존 카드 편집/삭제.
+- Firestore 서버 쓰기와 UID별 캐시/outbox·멱등성·충돌 처리. 동기화 flags를 켜야 클라우드로 저장됩니다. 기존 로컬 자료는 원본 보존 후 명시적으로 이전합니다.
+- 덱 선택·순서 섞기·퀴즈/카드 학습. 기억 평가 없이 다음 카드/마지막 완료를 저장해 진행률·학습량·스트릭·캘린더 반영.
+- 하루 목표 변경, 새로고침 후 유지, 계정 삭제(재인증·본인 자료 삭제·진행 중 쓰기 차단).
+- 개발 Mock은 로컬 development에서만 동작. 실제 API 오류를 Mock으로 자동 대체하지 않음.
 
-## 주요 기능
-
-- **로그인 필수:** 비로그인 상태에서는 로그인 화면만 렌더링합니다. 대시보드, 덱, 복습, 통계, 설정은 로그인 후 이용합니다. 로그아웃하면 학습 화면과 세션을 닫습니다.
-- **서버 인증:** AI 생성 요청에 Firebase ID 토큰을 보내며 Admin SDK가 서명/발급자/대상 프로젝트/유효 기간을 검증합니다. 토큰이 없거나 잘못되면 401로 차단합니다. 서명 검증에는 공개 인증서와 프로젝트 ID를 사용하므로 서비스 계정 비밀키가 필요하지 않습니다.
-- **AI 생성:** 제목과 카테고리로 생성합니다. 질문 수는 1~20개(기본 10개), 빠른 선택은 5/10/15/20개입니다. 참고 자료는 선택 사항입니다. 자료가 부족하면 근거 없는 내용을 만들지 않도록 더 적은 카드가 생성될 수 있습니다.
-- **전체 복습:** 모든 덱의 카드를 한 세션에서 공부합니다. 모든 카드/오늘 복습할 카드, 순서 섞기, 주관식 퀴즈를 선택합니다. 현재 카드의 원래 덱 이름을 보여주고 자기 평가 결과를 해당 덱에 저장합니다.
-- **간격 반복:** 기억한 카드는 1일부터 간격을 두 배로, 다시 볼 카드는 1분 뒤 예약합니다.
-- **계정별 로컬 저장:** Firebase UID별로 덱과 복습 기록을 분리합니다. 기존 비로그인 기록은 최초로 로그인한 계정에 한 번만 이어집니다. 다른 기기와 클라우드 동기화는 하지 않으며 브라우저 데이터를 지우면 기록이 사라집니다.
-- **빈 상태:** 샘플 덱 없이 시작하며 새 덱 만들기로 안내합니다. 이전 내장 샘플만 마이그레이션으로 제거하고 직접 만든 덱은 보존합니다.
-- 검색, 카테고리 필터, 주간 통계, 일일 목표, 반응형 UI를 지원합니다.
-
-## 카테고리
-
-외국어, 국어·문학, 수학, 과학, 역사·지리, 사회·정치, 인문, 프로그래밍·IT, 기술·공학, 경영·경제, 법률, 의학·간호, 자격증·시험, 디자인, 예술·음악, 건강·운동, 일반상식, 기타.
-
-[Quizlet의 주제 탐색](https://quizlet.com/search)과 [Brainscape의 과목 분류](https://www.brainscape.com/subjects)를 참고해 이 앱에 맞게 구성했습니다. 사용 빈도 순위를 의미하지는 않습니다. 카테고리는 `src/lib/categories.ts`에서 관리하며 폼과 API가 같은 목록을 사용합니다.
-
-## AI 오류 처리와 검증
-
-JSON Schema 출력을 요청하고 Zod로 카드 형식과 개수를 검증합니다. 키/권한/모델/사용량 오류는 구체적으로 안내합니다. 일시적인 Gemini 500/502/503/504는 0.5초, 1초 간격으로 최대 두 번 재시도합니다. 전체 생성 요청은 55초 제한이며 외부 서비스 장애가 지속되면 실패 안내와 입력 내용을 유지합니다.
+## 검증
 
 ```sh
 npm test
 npm run typecheck
 npm run build
-npm start
+npm run check:bundle
+npm run test:http
+npm run check:release
+# Java21+, 로컬8787 포트 필요. 운영 Firebase를 사용하지 않음
+npm run test:firestore
 ```
 
-테스트는 질문 수 경계값, 카테고리, 재시도, 인증 거부, 전체 복습의 원본 카드 참조, 계정 분리와 기존 데이터 보존을 검증합니다.
+`check:release`는 운영 도메인·연락처·서버 설정·안전 플래그가 준비되지 않으면 실패합니다. 테스트/빌드 통과와 실제 출시 설정 완료는 별개입니다.
 
-Firebase 인증: https://firebase.google.com/docs/auth/admin/verify-id-tokens
-Gemini API: https://ai.google.dev/api/generate-content
+## 배포 및 운영 문서
 
-네이버는 Firebase 기본 제공업체가 아닙니다. 추가하려면 네이버 OAuth 서버 연동과 Firebase 커스텀 토큰 인증을 별도로 구현해야 합니다.
+- [1차 MVP 배포 가이드](docs/DEPLOYMENT.md): Firebase App Hosting / Vercel, ADC·IAM, 비용과 롤백
+- [환경변수 표](docs/ENVIRONMENT.md): 공개/서버 Secret, 빌드/런타임 구분
+- [출시 체크리스트](docs/RELEASE_CHECKLIST.md): 설정·도메인·실제 계정·반응형·접근성·운영 점검
+- [Phase4·5 검증 보고서](docs/QUALITY_REPORT.md): 변경 내용·실행한 검증·남은 범위
+- [자료 카드 생성](docs/MATERIAL_CREATION.md), [AI 개발/Mock](docs/AI_DEVELOPMENT.md), [AI 비용 보호](docs/AI_COST_PROTECTION.md)
+- [Firestore 동기화](docs/FIRESTORE_SYNC.md), [데이터 구조](docs/DATABASE.md)
+
+Firebase Hosting 정적 업로드만으로는 서버 API가 동작하지 않습니다. App Hosting은 Blaze 비용 검토가 필요하며, Vercel은 별도 서버 Google ADC/WIF 연결이 필요합니다. 로컬 gcloud 인증이 배포 서버로 자동 전송되지 않습니다. 실제 배포·Rules 배포·IAM/비밀키/과금 변경은 별도 작업입니다.
+
+일부 이전 Phase 문서는 당시 상태를 보존한 기록입니다. 현재 출시 판단은 위 배포 문서와 검증 보고서를 기준으로 합니다. CARD_PLAN2와 공유 기능은 구현 기준에서 제외합니다.

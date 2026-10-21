@@ -7,25 +7,35 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:firestore": "firebase emulators:exec --only firestore --project demo-moa-study \"node --experimental-strip-types --test tests/firestore/*.test.mjs\"",
+    "test:http": "node --test tests/http/*.test.mjs",
+    "check:release": "node --experimental-strip-types scripts/check-release.mjs",
+    "check:bundle": "node scripts/check-bundle-secrets.mjs"
   },
   "dependencies": {
-    "firebase": "^13.0.0",
-    "firebase-admin": "^14.5.0",
-    "lucide-react": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "zod": "latest",
-    "zustand": "latest"
+    "firebase": "13.0.0",
+    "firebase-admin": "14.5.0",
+    "lucide-react": "1.59.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7",
+    "zustand": "5.0.15",
+    "@next/env": "16.4.2"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "typescript": "latest"
+    "@firebase/rules-unit-testing": "6.0.0",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "firebase-tools": "15.34.0",
+    "typescript": "7.0.2"
   },
   "overrides": {
     "@grpc/grpc-js": "^1.13.6"
+  },
+  "engines": {
+    "node": ">=22.14.0 <25"
   }
 }

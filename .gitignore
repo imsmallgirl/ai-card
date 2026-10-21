@@ -3,3 +3,16 @@ node_modules
 .env*
 !.env.example
 *.tsbuildinfo
+
+# Local Firebase emulator logs
+firebase-debug.log*
+firestore-debug.log
+ui-debug.log
+
+# Firebase/Google server credentials (never commit private keys)
+service-account*.json
+*serviceAccount*.json
+*adminsdk*.json
+credentials*.json
+application_default_credentials.json
+*.pem

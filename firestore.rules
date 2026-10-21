@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid
+        && (!exists(/databases/$(database)/documents/users/$(uid)/account/status)
+          || get(/databases/$(database)/documents/users/$(uid)/account/status).data.deleting != true);
+    }
+    // All mutations, usage, metadata and ledger access go through authenticated server APIs.
+    match /users/{uid}/{collection}/{document} {
+      allow read: if owner(uid) && collection in [
+        'decks', 'cards', 'dailyStats', 'settings', 'stats', 'reviewEvents'
+      ];
+      allow write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

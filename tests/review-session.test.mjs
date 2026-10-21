@@ -35,3 +35,19 @@ test('empty reviews cannot create an invalid zero-card session', () => {
   assert.equal(createReviewSession([]), null);
   assert.equal(createReviewSession([{ ...decks[0], cards: [card('future', 9999999999999)] }], { dueOnly: true }), null);
 });
+
+test('review selection excludes unchecked decks while retaining source indexes for ratings', () => {
+  const session = createReviewSession(decks, { deckIds: ['a'], dueOnly: true, shuffle: true, quiz: true });
+  assert.equal(session.quiz, true);
+  assert.deepEqual(session.entries.map(entry => [entry.deckId, entry.index, entry.card.question]), [['a', 0, 'A']]);
+  const all = createReviewSession(decks, { deckIds: ['b'] });
+  assert.deepEqual(all.entries.map(entry => [entry.deckId, entry.index]), [['b', 0]]);
+});
+
+test('empty selection never falls back to all decks, and removed or duplicate IDs are safe', () => {
+  assert.equal(createReviewSession(decks, { deckIds: [] }), null);
+  assert.equal(createReviewSession(decks, { deckIds: ['removed'] }), null);
+  const session = createReviewSession(decks, { deckIds: ['b', 'b', 'removed'] });
+  assert.equal(session.entries.length, 1);
+  assert.equal(session.entries[0].deckId, 'b');
+});

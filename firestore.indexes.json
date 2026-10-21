@@ -1,0 +1,30 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "question",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "answer",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "explanation",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "cards",
+      "fieldPath": "tags",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "generationDrafts",
+      "fieldPath": "cards",
+      "indexes": []
+    }
+  ]
+}

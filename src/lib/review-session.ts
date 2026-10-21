@@ -1,4 +1,4 @@
-import type { Card, Deck } from './store';
+import type { Card, Deck } from './store.ts';
 
 export type ReviewEntry = { deckId: string; deckTitle: string; index: number; card: Card };
 export type ReviewSession = { title: string; entries: ReviewEntry[]; position: number; correct: number; quiz: boolean };
@@ -8,8 +8,9 @@ export function collectReviewEntries(decks: Deck[], dueOnly = false, now = Date.
     !dueOnly || card.due <= now ? [{ deckId: deck.id, deckTitle: deck.title, index, card: { ...card } }] : []));
 }
 
-export function createReviewSession(decks: Deck[], options: { dueOnly?: boolean; shuffle?: boolean; quiz?: boolean; title?: string } = {}): ReviewSession | null {
-  const entries = collectReviewEntries(decks, options.dueOnly);
+export function createReviewSession(decks: Deck[], options: { dueOnly?: boolean; shuffle?: boolean; quiz?: boolean; title?: string; deckIds?: string[]; filter?:'all'|'favorite'|'wrong' } = {}): ReviewSession | null {
+  const selectedIds = options.deckIds === undefined ? null : new Set(options.deckIds);
+  const entries = collectReviewEntries(selectedIds ? decks.filter(deck => selectedIds.has(deck.id)) : decks, options.dueOnly).filter(entry=>options.filter==='favorite'?entry.card.favorite:options.filter==='wrong'?entry.card.lastWrong:true);
   if (!entries.length) return null;
   if (options.shuffle) {
     for (let i = entries.length - 1; i > 0; i--) {

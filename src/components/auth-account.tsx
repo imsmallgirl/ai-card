@@ -23,7 +23,7 @@ function errorMessage(error: unknown) {
   }
 }
 
-export default function AuthAccount({ variant = 'header' }: { variant?: 'header' | 'sidebar' | 'login' }) {
+export default function AuthAccount({ variant = 'header', label }: { variant?: 'header' | 'sidebar' | 'login' | 'cta'; label?: string }) {
   const { user, checking, error: authError } = useAuth();
   const titleId = useId();
   const [open, setOpen] = useState(false);
@@ -71,8 +71,8 @@ export default function AuthAccount({ variant = 'header' }: { variant?: 'header'
   }
 
   const name = user?.displayName || user?.email?.split('@')[0] || '학습자';
-  if (variant === 'login') return <div className="login-actions">
-    <button className="google-signin" disabled={pending || !firebaseConfigured} onClick={login}><span className="google-mark" aria-hidden="true">G</span>{pending ? 'Google에서 로그인하는 중…' : 'Google로 계속하기'}</button>
+  if (variant === 'login' || variant === 'cta') return <div className="login-actions">
+    {user ? <a className="primary" href="/">내 학습 공간으로</a> : <button className={variant === 'cta' ? 'primary landing-auth-cta' : 'google-signin'} disabled={checking || pending || !firebaseConfigured} onClick={login}><span className="google-mark" aria-hidden="true">G</span>{checking ? '로그인 확인 중…' : pending ? 'Google에서 로그인하는 중…' : label || 'Google로 계속하기'}</button>}
     {!firebaseConfigured && <p className="error" role="alert">로그인 설정이 필요합니다. Firebase 프로젝트 설정을 확인해 주세요.</p>}
     {(error || authError) && <p className="error" role="alert">{error || authError}</p>}
   </div>;
@@ -96,7 +96,7 @@ export default function AuthAccount({ variant = 'header' }: { variant?: 'header'
           {!firebaseConfigured && <div className="auth-setup"><strong>로그인 연결을 준비하고 있어요</strong><p>Firebase 프로젝트 설정 후 사용할 수 있습니다. 관리자가 Firebase 설정을 완료한 후 로그인할 수 있습니다.</p></div>}
         </>}
         {(error || authError) && <p className="error" role="alert">{error || authError}</p>}
-        <p className="auth-storage-note">학습 덱과 기록은 이 브라우저에 저장됩니다. 계정별로 분리되며 다른 기기와는 동기화되지 않습니다.</p>
+        <p className="auth-storage-note">학습 덱과 기록은 계정별로 분리됩니다. 저장 방식은 학습 공간의 저장 상태에서 확인할 수 있습니다. 기존 로컬 덱은 해당 기기에 유지됩니다.</p>
       </section>
     </div>}
   </>;
