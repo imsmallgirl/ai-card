@@ -1,4 +1,17 @@
 {
+  "apphosting": {
+    "backendId": "moa-web",
+    "rootDir": ".",
+    "alwaysDeployFromSource": true,
+    "ignore": [
+      "node_modules", ".git", ".next", ".env*", ".firebase",
+      ".aws", ".codex", ".agents", "*.tsbuildinfo",
+      "**/service-account*.json", "**/*serviceAccount*.json",
+      "**/*adminsdk*.json", "**/credentials*.json",
+      "**/application_default_credentials.json", "**/*.pem",
+      "*-debug.log", "*-debug.log*"
+    ]
+  },
   "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
   "emulators": { "firestore": { "host": "127.0.0.1", "port": 8787 }, "ui": { "enabled": false }, "singleProjectMode": true }
 }
