@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {useDialogAccessibility} from './use-dialog-accessibility';
 import AiLoadingOverlay from './ai-loading-overlay';
-import { FileText, X } from 'lucide-react';
+import { FileText, ImagePlus, X } from 'lucide-react';
 import { ZodError } from 'zod';
 import { materialCategory } from '@/lib/material-parser';
 import { createMaterialDeck, saveMaterialDeck } from '@/lib/material-deck';
@@ -23,6 +23,7 @@ export default function MaterialDeckDialog({open,close,changeMode,store,color,sa
   open:boolean;close:()=>void;changeMode:(mode:CreationMode)=>void;
   store:Pick<StudyState,'addDeck'|'confirmDeck'>;color:string;saved:(deck:Deck,method?:'rules'|'ai')=>void;
 }){
+  const imageInput=useRef<HTMLInputElement>(null);
   const {user}=useAuth();
   const webAnalytics=useWebAnalytics();
   const [image,setImage]=useState<MaterialImage|null>(null);const [imageBusy,setImageBusy]=useState(false);
@@ -63,15 +64,17 @@ export default function MaterialDeckDialog({open,close,changeMode,store,color,sa
     <button className="close" aria-label="닫기" disabled={busy||aiBusy||imageBusy} onClick={close}><X size={21}/></button>
     <span className="modal-icon"><FileText/></span><h2 id="material-title">내 자료를 학습 카드로</h2><p>질문과 답변을 그대로 살리고, 해설은 따로 모아요.</p>
     <DeckCreationMode value="material" change={changeMode} disabled={busy||aiBusy||imageBusy}/>
-    <label>원본 자료<textarea aria-describedby="material-input-count" autoFocus maxLength={15000} rows={9} disabled={locked} value={source} onChange={event=>setSource(event.target.value)} placeholder={'1. React의 특징은?\n답변: 컴포넌트 기반으로 UI를 구성합니다.\n-> 재사용성과 선언적 UI가 학습 포인트입니다.\n\nQ: 상태란 무엇인가요?\nA: 컴포넌트가 기억하는 데이터입니다.'}/></label>
+    <label>원본 자료<textarea aria-describedby="material-input-count" autoFocus maxLength={15000} rows={9} disabled={locked} value={source} onChange={event=>setSource(event.target.value)} placeholder={'공부하고 싶은 내용을 자유롭게 붙여 넣어 주세요.\n수업 필기, 영어 단어, 시험 요약, 생활 상식 모두 좋아요.\n\n예시\napple: 사과 / library: 도서관\n한글을 창제한 왕은 세종대왕이다.\n손을 씻을 때는 비누로 30초 이상 꼼꼼히 씻는다.'}/></label>
 
     <p id="material-input-count" className="input-guidance">{source.length.toLocaleString()} / 15,000자</p>
     {source.length>15000&&<p className="material-warning">자료를 15,000자 이하로 나눠 주세요. 기존 입력은 보존됩니다.</p>}
 
-    <div className="material-image-upload"><label>이미지 자료 (선택 · 한 장)<input type="file" accept="image/jpeg,image/png,image/webp" disabled={locked||Boolean(aiPending)} onChange={async event=>{
+    <div className="material-image-upload"><div className="material-image-heading"><span className="material-image-icon" aria-hidden="true"><ImagePlus size={21}/></span><div><strong>이미지 자료</strong><span>교재나 필기 사진 한 장을 추가해 보세요.</span></div><span className="material-image-optional">선택</span></div>
+    <button type="button" className="soft-button material-image-select" disabled={locked||Boolean(aiPending)} onClick={()=>imageInput.current?.click()}><ImagePlus size={17} aria-hidden="true"/>{imageBusy?'이미지 준비 중…':image?'다른 이미지 선택':'이미지 선택하기'}</button>
+    <input ref={imageInput} hidden aria-label="학습 자료 이미지 선택" type="file" accept="image/jpeg,image/png,image/webp" disabled={locked||Boolean(aiPending)} onChange={async event=>{
       const file=event.target.files?.[0];event.target.value='';if(!file)return;
       setImageBusy(true);setError('');try{const prepared=await prepareMaterialImage(file);if(!abort.current?.signal.aborted)setImage(prepared);}catch(cause){if(!abort.current?.signal.aborted)setError(cause instanceof Error?cause.message:'이미지를 읽지 못했습니다.');}finally{setImageBusy(false);}
-    }}/></label><small>JPG·PNG·WebP 최대 10MB. 전송 전 긴 변 1,600px·256KB 이하로 줄입니다. 작은 글자는 문제 영역만 잘라 등록하세요.</small>
+    }}/><small>JPG·PNG·WebP 최대 10MB. 전송 전 긴 변 1,600px·256KB 이하로 줄입니다. 작은 글자는 문제 영역만 잘라 등록하세요.</small>
     {imageBusy&&<p role="status">이미지를 준비하고 있어요.</p>}
     {image&&<><img className="material-image-preview" src={`data:${image.mimeType};base64,${image.data}`} alt="분석에 사용할 학습 자료 이미지"/><button type="button" className="text-button" disabled={locked||Boolean(aiPending)} onClick={()=>setImage(null)}>이미지 제거</button></>}
     <p className="input-guidance">글 또는 이미지를 등록하세요. 분석 요청 시 전송되며 실패 복구를 위해 이 브라우저에 임시 보존됩니다. 저장 성공 후 화면 자료는 지워집니다.</p></div>

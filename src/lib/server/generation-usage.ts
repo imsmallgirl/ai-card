@@ -16,7 +16,7 @@ export function generationPolicy(env: Record<string, string | undefined> = proce
   const unlimited = env.NODE_ENV === 'development' && env.AI_GENERATION_UNLIMITED === 'true' && !env.VERCEL && !env.K_SERVICE && env.NETLIFY !== 'true';
   return {
     unlimited,
-    dailyLimit: integer('AI_DAILY_LIMIT', 3, 0, 1000),
+    dailyLimit: integer('AI_DAILY_LIMIT', 10, 0, 1000),
     globalAttempts: integer('AI_GLOBAL_DAILY_ATTEMPTS', 100, 0, 1000000),
     globalTokenBudget: integer('AI_GLOBAL_DAILY_TOKEN_BUDGET', 2000000, 0, 1000000000),
     maxOutputTokens: integer('AI_MAX_OUTPUT_TOKENS', 8192, 256, 16384),

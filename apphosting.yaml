@@ -42,7 +42,7 @@ env:
     value: "false"
     availability: [ RUNTIME ]
   - variable: AI_DAILY_LIMIT
-    value: "3"
+    value: "10"
     availability: [ RUNTIME ]
   - variable: AI_GLOBAL_DAILY_ATTEMPTS
     value: "100"

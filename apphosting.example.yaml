@@ -39,7 +39,7 @@ env:
   - variable: AI_GENERATION_UNLIMITED
     value: "false"
   - variable: AI_DAILY_LIMIT
-    value: "3"
+    value: "10"
   - variable: AI_GLOBAL_DAILY_ATTEMPTS
     value: "100"
   - variable: AI_GLOBAL_DAILY_TOKEN_BUDGET

@@ -8,7 +8,7 @@ import { createGenerationHandlers } from '../src/lib/server/generation-http.ts';
 import { AuthenticationError } from '../src/lib/server-auth.ts';
 import { generationFetch, readPendingGeneration, pendingGenerationKey } from '../src/lib/generation-client.ts';
 const now = Date.UTC(2026, 9, 21, 1);
-const policy = (changes = {}) => ({ ...generationPolicy({ AI_COOLDOWN_SECONDS: '0', AI_FAILURE_COOLDOWN_SECONDS: '0' }), ...changes });
+const policy = (changes = {}) => ({ ...generationPolicy({ AI_DAILY_LIMIT: '3', AI_COOLDOWN_SECONDS: '0', AI_FAILURE_COOLDOWN_SECONDS: '0' }), ...changes });
 const input = generationInput.parse({ title: '영어' });
 const answer = () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ cards: [{ question: 'Q', answer: 'A' }] }) }] } }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20, thoughtsTokenCount: 30, totalTokenCount: 150 } });
 const opts = (db, overrides = {}) => ({ db, uid: 'a', id: crypto.randomUUID(), input, key: 'not-real', model: 'test-model', policy: policy(), signal: new AbortController().signal, clock: () => now, fetcher: async () => Response.json(answer()), ...overrides });
@@ -154,7 +154,7 @@ test('HTTP auth, input byte limit, key requirements and no memory fallback', asy
   const id = crypto.randomUUID();
   const response = await handler(req({ ...input, uid: 'b' }, id), 'generate');
   assert.equal(response.status, 200); assert.equal(response.headers.get('cache-control'), 'no-store');
-  assert.equal((await response.json()).usage.remaining, 2);
+  assert.equal((await response.json()).usage.remaining, 9);
   assert.equal(db.get('users/b/usageDaily/2026-10-21'), undefined);
   const replay = await handler(new Request('https://test/result', { headers: { authorization: 'a' } }), 'result', id);
   assert.equal(replay.status, 200); assert.equal(calls, 1);
@@ -245,4 +245,17 @@ test('normalized duplicate AI questions are rejected without an automatic replac
   const option=opts(db,{input:generationInput.parse({title:'중복',count:2}),fetcher:async()=>{calls++;return Response.json({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify({cards:[{question:'질문?',answer:'A'},{question:'질문 !',answer:'B'}]})}]}}]});}});
   await assert.rejects(generateWithBudget(option),{code:'DUPLICATE_CARDS'});assert.equal(calls,1);
   assert.equal((await readGenerationUsage(db,'a',policy(),now)).charged,1);
+});
+
+test('launch default permits ten daily generations then blocks the eleventh for the same user',async()=>{
+  const db=generationMemoryDatabase();const p=generationPolicy({AI_COOLDOWN_SECONDS:'0'});
+  assert.equal(p.dailyLimit,10);
+  for(let index=0;index<10;index++){
+    const id=crypto.randomUUID();await reserve(db,'launch',id,p,now);
+    await beginGenerationAttempt(db,'launch',id,p,now);
+    await finishGeneration(db,'launch',id,p,{result:{cards:[{question:'Q',answer:'A'}],model:'test-model'}},now);
+  }
+  assert.equal((await readGenerationUsage(db,'launch',p,now)).remaining,0);
+  await assert.rejects(()=>reserve(db,'launch',crypto.randomUUID(),p,now));
+  assert.equal((await readGenerationUsage(db,'other-user',p,now)).remaining,10);
 });
