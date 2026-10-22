@@ -191,10 +191,12 @@ export default function StudyApp(){
    {session.position>=session.entries.length?<StudyCompletion title={session.title} count={completedEntries.current.size} today={todayReviews} goal={dailyGoal} close={()=>{setSession(null);setView('대시보드');}} again={()=>{trackReviewStart(session);completionIds.current.clear();completedEntries.current.clear();setCompletionError('');setSession({...session,position:0});setFlipped(false);setAnswer('');}}/>:<>
      <h2 id="review-title">{session.title}</h2>
      <div className="review-progress"><span>{session.position+1} / {session.entries.length}</span></div>
-     <div className="flashcard"><span>{flipped?'정답':'질문'}</span><h3>{flipped?session.entries[session.position].card.answer:session.entries[session.position].card.question}</h3>
+     <div className={`flashcard review-reading-card ${flipped?'is-answer':'is-question'}`} role="region" aria-label={flipped?'정답과 해설':'학습 질문'} tabIndex={0}>
+       {flipped&&<div className="review-question-context"><span>질문</span><p>{session.entries[session.position].card.question}</p></div>}
+       <span className="review-card-label">{flipped?'정답':'질문'}</span><h3>{flipped?session.entries[session.position].card.answer:session.entries[session.position].card.question}</h3>
        {flipped&&session.entries[session.position].card.explanation&&<section className="card-explanation"><strong>해설</strong><p>{session.entries[session.position].card.explanation}</p></section>}
      </div>
-     {session.quiz&&!flipped&&<textarea className="quiz-answer" aria-label="내 답안" value={answer} onChange={e=>setAnswer(e.target.value)} placeholder="기억나는 답을 적어 보세요."/>}
+     {session.quiz&&!flipped&&<><p id="quiz-answer-help" className="quiz-answer-help">질문을 읽고 답을 떠올린 뒤 입력해 보세요. 정답을 확인하고 직접 비교할 수 있어요.</p><textarea className="quiz-answer" aria-label="내 답안" aria-describedby="quiz-answer-help" value={answer} onChange={e=>setAnswer(e.target.value)} placeholder="기억나는 답을 적어 보세요."/></>}
      {session.quiz&&flipped&&answer&&<p className="self-check">내 답안: {answer}</p>}
      <button className="primary generate" disabled={completionBusy} onClick={()=>setFlipped(value=>!value)}>{flipped?'질문 다시 보기':'정답 확인하기'}</button>
      {completionError&&<p className="error" role="alert">{completionError}</p>}<div className="review-navigation">
