@@ -91,5 +91,5 @@ export default function MaterialDeckDialog({open,close,changeMode,store,color,sa
       {error&&<div className="error" role="alert"><p>{error}</p><p>{attempt.current?'원본과 미리보기를 유지하고 있어요. 연결 상태를 확인한 뒤 아래에서 같은 덱의 저장을 다시 확인하세요.':'입력한 자료는 그대로 있어요. 내용을 확인하거나 AI 없이 추출을 이용할 수 있어요.'}</p></div>}{attempt.current&&!busy&&<p role="status">저장 요청이 보존되었습니다. 같은 덱으로 재시도하며 중복 생성하지 않습니다.</p>}
       <button className="primary generate" type="submit" disabled={busy||aiBusy||!cards.some(card=>card.included)}>{busy?'저장 중…':attempt.current?'같은 덱 저장 다시 확인':`선택한 ${cards.filter(card=>card.included).length}장 저장하기`}</button>
     </form>
-  <AiLoadingOverlay active={aiBusy} label="AI로 카드를 추출하고 있어요"/></section></div>;
+  <AiLoadingOverlay active={aiBusy||busy} phase={busy?'saving':'generation'} label={busy?'카드를 저장하고 있어요':'AI로 카드를 추출하고 있어요'}/></section></div>;
 }
