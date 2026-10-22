@@ -4,7 +4,7 @@ import type { MaterialCard } from '@/lib/material-parser';
 export type MaterialPreviewCard=MaterialCard&{included:boolean;tagsText?:string};
 export default function MaterialCardPreview({cards,change,locked}:{cards:MaterialPreviewCard[];change:(cards:MaterialPreviewCard[])=>void;locked:boolean}){
   function update(index:number,patch:Partial<MaterialPreviewCard>){change(cards.map((card,i)=>i===index?{...card,...patch}:card));}
-  return <section className="material-preview"><h3>미리보기 · {cards.filter(card=>card.included).length} / {cards.length}장 선택</h3><p>질문·답은 원본과 비교하세요. 자동 분류는 추정이며 모두 수정할 수 있습니다.</p>
+  return <section className="material-preview" aria-label="저장 전 카드 미리보기"><h3 aria-live="polite">미리보기 · {cards.filter(card=>card.included).length} / {cards.length}장 선택</h3><p>아직 저장되지 않았어요. 질문·답을 원본과 비교하고 수정한 뒤 저장하세요. 체크를 해제한 카드는 저장에서 제외됩니다.</p>
     <fieldset className="generation-fields" disabled={locked}>{cards.map((card,index)=><fieldset className={`manual-card ${!card.included?'material-excluded':''}`} key={index}>
       <legend><label className="material-include"><input type="checkbox" checked={card.included} onChange={event=>update(index,{included:event.target.checked})}/>카드 {index+1} 저장에 포함</label></legend>
       <label>질문<textarea required={card.included} maxLength={500} value={card.question} onChange={event=>update(index,{question:event.target.value})}/></label>
