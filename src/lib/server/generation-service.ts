@@ -96,7 +96,7 @@ export async function generateWithBudget(options: {
     const result = (input.mode==='material'?materialGeneratedCards:generatedCards).safeParse(cards);
     if (!result.success || result.data.cards.length > input.count) throw new GenerationError('INVALID_OUTPUT', input.mode==='material'?'AI 카드 추출 결과가 올바르지 않습니다. 덱 이름·질문·답변·카테고리·태그·난이도 또는 카드 수를 확인해 주세요.':'학습 주제를 파악하지 못했습니다. 주제와 참고 자료를 확인해 주세요.', 422);
     if(isEnglishVocabulary(input)&&!validVocabularyCards(result.data.cards))throw new GenerationError('VOCABULARY_FORMAT_INVALID','영어 단어·한국어 뜻 형식이 아닌 응답을 받았습니다. 결과는 저장하지 않았습니다. 새 요청으로 다시 생성해 주세요.',422);
-    if(input.mode==='material'){
+    if(input.mode==='material'&&!input.image){
       const expected=parseMaterial(input.text).cards.length;
       if(expected&&result.data.cards.length!==expected)throw new GenerationError('MATERIAL_QUESTION_MISMATCH',`원문은 ${expected}개 문항인데 AI가 ${result.data.cards.length}개 카드로 반환했습니다. 문제를 합치거나 누락한 결과는 적용하지 않습니다. 자료를 나누어 새 요청으로 추출해 주세요.`,422);
     }

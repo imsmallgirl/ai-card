@@ -149,7 +149,7 @@ test('HTTP auth, input byte limit, key requirements and no memory fallback', asy
   const req = (body, id = crypto.randomUUID(), auth = 'a') => new Request('https://test/api/generate', { method: 'POST', headers: { authorization: auth, 'content-type': 'application/json', 'idempotency-key': id }, body: typeof body === 'string' ? body : JSON.stringify(body) });
   assert.equal((await handler(req(input, crypto.randomUUID(), 'b'), 'generate')).status, 401);
   assert.equal((await handler(req(input, 'bad'), 'generate')).status, 400);
-  assert.equal((await handler(req('a'.repeat(65537)), 'generate')).status, 413);
+  assert.equal((await handler(req('a'.repeat(450001)), 'generate')).status, 413);
   assert.equal(calls, 0);
   const id = crypto.randomUUID();
   const response = await handler(req({ ...input, uid: 'b' }, id), 'generate');

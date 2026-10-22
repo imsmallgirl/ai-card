@@ -32,11 +32,11 @@ export function createGenerationHandlers(deps: GenerationDependencies) {
       try { policy = generationPolicy(env); } catch { throw new GenerationError('NOT_CONFIGURED', 'AI 사용량 제한 설정을 확인해 주세요.', 503); }
       if (settings.provider === 'mock') policy = { ...policy, unlimited: true, cooldownMs: 0, failureCooldownMs: 0 };
       // Reject disabled/malformed generation requests before Firestore usage reads or reservations.
-      const generation=operation==='generate'?{requestId:generationRequestId.parse(request.headers.get('idempotency-key')),input:generationInput.parse(await readStudyBody(request))}:undefined;
+      const generation=operation==='generate'?{requestId:generationRequestId.parse(request.headers.get('idempotency-key')),input:generationInput.parse(await readStudyBody(request, 450000))}:undefined;
       if(generation){
         if(generation.input.mode==='material'){
-          if(!generation.input.text.trim())throw new GenerationError('INVALID_INPUT','AI 자료 분석에는 원본 자료가 필요합니다.',400);
-          if(parseMaterial(generation.input.text).cards.length>generation.input.count)throw new GenerationError('INVALID_INPUT','원문의 문항 수가 AI 생성 한도를 넘습니다. 자료를 나누거나 AI 없이 추출해 주세요.',400);
+          if(!generation.input.text.trim()&&!generation.input.image)throw new GenerationError('INVALID_INPUT','AI 자료 분석에는 원본 자료가 필요합니다.',400);
+          if(!generation.input.image&&parseMaterial(generation.input.text).cards.length>generation.input.count)throw new GenerationError('INVALID_INPUT','원문의 문항 수가 AI 생성 한도를 넘습니다. 자료를 나누어 분석해 주세요.',400);
         }
         if(env.AI_GENERATION_ENABLED!=='true')throw new GenerationError('GENERATION_DISABLED','AI 생성이 현재 비활성화되어 있습니다. 저장된 카드는 계속 복습할 수 있습니다.',503);
         if(settings.provider==='gemini'&&!env.GEMINI_API_KEY?.trim())throw new GenerationError('NOT_CONFIGURED','서버 AI 연결 설정이 필요합니다.',503);

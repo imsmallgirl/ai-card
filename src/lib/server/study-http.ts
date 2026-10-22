@@ -11,7 +11,7 @@ type Dependencies = {
   repository: typeof studyRepository;
 };
 const numberParam = z.coerce.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
-export async function readStudyBody(request: Request) {
+export async function readStudyBody(request: Request, maxBytes = 65536) {
   if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) throw new StudyError('INVALID_INPUT', 'JSON 형식으로 요청해 주세요.', 400);
   const reader = request.body?.getReader();
   if (!reader) throw new StudyError('INVALID_INPUT', '요청 내용이 없습니다.', 400);
@@ -22,9 +22,9 @@ export async function readStudyBody(request: Request) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.length;
-      if (size > 65536) {
+      if (size > maxBytes) {
         await reader.cancel();
-        throw new StudyError('BODY_TOO_LARGE', '요청은 64KiB까지 저장할 수 있습니다.', 413);
+        throw new StudyError('BODY_TOO_LARGE', maxBytes===65536?'요청은 64KiB까지 저장할 수 있습니다.':'이미지 요청이 너무 큽니다. 이미지를 줄여 다시 시도해 주세요.', 413);
       }
       chunks.push(value);
     }
