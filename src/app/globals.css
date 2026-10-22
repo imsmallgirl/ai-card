@@ -78,3 +78,11 @@ body{font-size:16px;line-height:1.65;letter-spacing:-.3px}
 .study-boot p+p{font-size:14px}
 .study-boot-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;width:min(100%,360px)}
 .study-boot-actions button{flex:1;min-width:130px}
+
+/* Study actions keep the existing purple palette while shortening the dashboard. */
+.skip-link{position:fixed;top:8px;left:8px;z-index:1000;padding:12px 18px;background:white;color:#58417d;transform:translateY(-160%);border:2px solid #7960b2;border-radius:8px}.skip-link:focus{transform:none}
+.dashboard-actions{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;background:linear-gradient(120deg,#f5f0fc,#fff)}
+.dashboard-actions h2{margin:0 0 10px;font-size:23px;color:#655080}.dashboard-actions p{margin:0;line-height:1.8;color:#766680;max-width:540px}.dashboard-action-buttons{display:flex;flex-wrap:wrap;gap:10px;flex-shrink:0}.dashboard-action-buttons button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px}
+.deck-toolbar,.header-right,.page-heading>div{min-width:0}.deck h3{overflow-wrap:anywhere}.category-tabs{max-width:100%;overflow-x:auto}.stats .stat-caption{white-space:normal}.progress-label{gap:8px}
+@media(max-width:1000px){.dashboard-actions{align-items:flex-start;flex-direction:column}.dashboard-action-buttons{width:100%}}
+@media(max-width:600px){.dashboard-actions{padding:20px}.dashboard-actions h2{font-size:21px}.dashboard-action-buttons{flex-direction:column}.dashboard-action-buttons button{width:100%}.deck-toolbar{flex-direction:column;align-items:stretch}.deck-toolbar .search{width:100%;box-sizing:border-box}.creation-modes{flex-wrap:wrap}.creation-modes button{min-height:44px;flex:1;min-width:90px}.modal input,.modal textarea,.modal select{font-size:16px}.deck-footer{flex-wrap:wrap}.deck-footer button{min-height:44px;flex:1}.stats .stat{min-width:0}.material-extract-actions{grid-template-columns:1fr}.sidebar nav button{min-height:44px}}
