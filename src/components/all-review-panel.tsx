@@ -27,7 +27,7 @@ export default function AllReviewPanel({ decks, excludedIds, onExcludedChange, o
         <button className={!dueOnly ? 'scope-selected' : ''} aria-pressed={!dueOnly} onClick={() => setDueOnly(false)}><strong>모든 카드</strong><span>복습 예정일과 관계없이 {selectedTotal}장</span></button>
         <button className={dueOnly ? 'scope-selected' : ''} aria-pressed={dueOnly} onClick={() => setDueOnly(true)}><strong>오늘 복습할 카드</strong><span>지금 복습할 때가 된 {due}장</span></button>
       </div>
-      <div className="review-options"><label><input type="checkbox" checked={shuffle} onChange={event => setShuffle(event.target.checked)}/><Shuffle size={17}/>카드 순서 섞기</label><label><input type="checkbox" checked={quiz} onChange={event => setQuiz(event.target.checked)}/>주관식 퀴즈로 공부하기</label></div>
+      <div className="review-options"><label><input type="checkbox" checked={shuffle} onChange={event => setShuffle(event.target.checked)}/><Shuffle size={17}/>카드 순서 섞기</label><label><input type="checkbox" checked={quiz} onChange={event => setQuiz(event.target.checked)}/>답을 직접 적고 정답과 비교하기</label></div>
       <div className="review-deck-picker">
         <div className="review-deck-heading"><h3>공부할 학습 덱</h3><div><button type="button" onClick={() => onExcludedChange([])}>전체 선택</button><button type="button" onClick={() => onExcludedChange(decks.map(deck => deck.id))}>전체 해제</button></div></div>
         <div className="review-deck-list">{decks.map(deck => <label key={deck.id} className={!excludedIds.includes(deck.id) ? 'review-deck-option is-selected' : 'review-deck-option'}>
