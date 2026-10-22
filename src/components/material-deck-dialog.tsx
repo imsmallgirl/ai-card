@@ -44,7 +44,7 @@ export default function MaterialDeckDialog({open,close,changeMode,store,color,sa
   const locked=busy||aiBusy||Boolean(attempt.current);
   function extract(){
     if(cards.length&&!window.confirm('다시 추출하면 현재 미리보기의 수정·선택 내용이 교체됩니다. 계속할까요?'))return;
-    try{const result=parseMaterial(source);setCards(result.cards.map(card=>({...card,included:true})));setCategory(result.classification.category||'기타');setWarnings(result.warnings);setParsedSource(source);setOrigin('rules');setError(result.cards.length?'':'질문과 답변을 찾지 못했어요. 아래 입력 예시처럼 Q: / A:로 구분하거나 AI 추출을 선택해 주세요.');if(result.cards.length)webAnalytics.track({name:'card_generation_completed',method:'rules',count_bucket:countBucket(result.cards.length)},`rules:${crypto.randomUUID()}`);}
+    try{const result=parseMaterial(source);setCards(result.cards.map(card=>({...card,included:true})));setCategory(result.classification.category||'기타');setWarnings(result.warnings);setParsedSource(source);setOrigin('rules');setError(result.cards.length?'':'질문과 답변을 찾지 못했어요. Q: / A:로 구분하거나 AI 추출을 선택해 주세요.');if(result.cards.length)webAnalytics.track({name:'card_generation_completed',method:'rules',count_bucket:countBucket(result.cards.length)},`rules:${crypto.randomUUID()}`);}
     catch(cause){setError(cause instanceof Error?cause.message:'자료를 읽지 못했습니다.');}
   }
   async function analyze(){
@@ -65,18 +65,18 @@ export default function MaterialDeckDialog({open,close,changeMode,store,color,sa
     <button className="close" aria-label="닫기" disabled={busy||aiBusy} onClick={close}><X size={21}/></button>
     <span className="modal-icon"><FileText/></span><h2 id="material-title">내 자료를 학습 카드로</h2><p>질문과 답변을 그대로 살리고, 해설은 따로 모아요.</p>
     <DeckCreationMode value="material" change={changeMode} disabled={busy||aiBusy}/>
-    <label>원본 자료<textarea aria-describedby="material-input-help material-input-count" autoFocus maxLength={60000} rows={9} disabled={locked} value={source} onChange={event=>setSource(event.target.value)} placeholder={'1. React의 특징은?\n답변: 컴포넌트 기반으로 UI를 구성합니다.\n-> 재사용성과 선언적 UI가 학습 포인트입니다.\n\nQ: 상태란 무엇인가요?\nA: 컴포넌트가 기억하는 데이터입니다.'}/></label>
-    <small id="material-input-help">번호·Markdown 제목·Q/A·답변/정답·→ 또는 -&gt; 해설을 지원합니다. 기본 추출은 이 브라우저에서만 실행하며 AI API를 호출하지 않습니다.</small>
-    <p id="material-input-count" className="input-guidance">{source.length.toLocaleString()} / 60,000자 · AI 추출은 15,000자까지</p>
-    {source.length>15000&&<p className="material-warning">AI 추출을 사용하려면 자료를 15,000자 이하로 나눠 주세요. AI 없이 추출은 계속 이용할 수 있어요.</p>}
-    <details className="input-example"><summary>잘 추출되는 입력 예시</summary><pre>{'Q: 광합성이란?\nA: 빛 에너지를 이용해 유기물을 만드는 과정입니다.\n→ 엽록체에서 일어납니다.'}</pre><p>붙여 넣기 → 추출 → 미리보기 수정·선택 → 저장 순서로 진행해요.</p></details>
+    <label>원본 자료<textarea aria-describedby="material-input-help material-input-count" autoFocus maxLength={15000} rows={9} disabled={locked} value={source} onChange={event=>setSource(event.target.value)} placeholder={'1. React의 특징은?\n답변: 컴포넌트 기반으로 UI를 구성합니다.\n-> 재사용성과 선언적 UI가 학습 포인트입니다.\n\nQ: 상태란 무엇인가요?\nA: 컴포넌트가 기억하는 데이터입니다.'}/></label>
+    <small id="material-input-help">번호·Markdown 제목·Q/A·답변/정답·→ 또는 -&gt; 해설을 지원합니다.</small>
+    <p id="material-input-count" className="input-guidance">{source.length.toLocaleString()} / 15,000자</p>
+    {source.length>15000&&<p className="material-warning">자료를 15,000자 이하로 나눠 주세요. 기존 입력은 보존됩니다.</p>}
+
     <div className="material-ai"><details><summary>AI 추출 안내</summary><p>자료를 AI가 읽고 학습 카드로 정리합니다. 덱 이름·질문·답변·해설과 카테고리·태그·난이도를 함께 추출합니다. 정답이 없는 객관식은 AI가 풀이하며 근거를 해설에 표시합니다. 기존 미리보기와 수정·제외한 내용은 AI 결과로 모두 교체됩니다. 선택 시 자료가 Google Gemini로 전송되며 AI 생성 1회 및 API 비용이 발생할 수 있습니다. 최대 15,000자·20장까지 지원합니다. 저장 전 원본과 비교해 주세요. 이전 요청 확인은 당시 자료를 사용하며, 실패해도 기존 미리보기는 유지됩니다.</p></details>
       <label className="material-consent"><input type="checkbox" checked={consent} disabled={locked} onChange={event=>setConsent(event.target.checked)}/>자료 전송과 AI 사용량 차감을 확인했습니다.</label>
       {aiNotice&&<p role="status">{aiNotice}</p>}
       {(aiPending||aiReadError)&&<button className="soft-button" disabled={locked} type="button" onClick={()=>{try{localStorage.removeItem(aiKey);setAiPending(null);setAiReadError(false);setAiFailed(false);setAiNotice('새 분석은 새 요청으로 처리됩니다. 이전 사용량은 환불되지 않습니다.');}catch{setError('이전 요청을 해제하지 못했습니다. 원본은 보존됩니다.');}}}>이전 요청 연결 해제</button>}
     </div>
     <div className="material-extract-actions">
-      <button className="soft-button" type="button" disabled={locked||!source.trim()} onClick={extract}>AI 없이 카드 추출</button>
+      <button className="soft-button" type="button" disabled={locked||!source.trim()||source.length>15000} onClick={extract}>AI 없이 카드 추출</button>
       <button className="soft-button" type="button" disabled={locked||aiReadError||!consent||(!aiPending&&(!source.trim()||source.length>15000))||aiFailed} onClick={()=>void analyze()}>{aiBusy?'AI로 카드 추출 중…':aiPending?'이전 카드 추출 요청 확인':'AI로 카드 추출'}</button>
     </div>
     <form onSubmit={async event=>{event.preventDefault();if(lock.current)return;lock.current=true;setBusy(true);setError('');try{

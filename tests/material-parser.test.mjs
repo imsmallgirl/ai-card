@@ -62,7 +62,7 @@ test('rules support more than 20 questions without silently truncating, and enfo
   const source=Array.from({length:25},(_,i)=>`Q${i+1}: 질문 ${i+1}?\nA${i+1}: 답 ${i+1}`).join('\n');
   const parsed=parseMaterial(source);assert.equal(parsed.cards.length,25);
   assert.equal(createMaterialDeck({title:'25장',category:'기타',cards:parsed.cards},'blue').cards.length,25);
-  assert.throws(()=>parseMaterial('a'.repeat(60001)),/60,000/);
+  assert.throws(()=>parseMaterial('a'.repeat(15001)),/15,000/);
   assert.throws(()=>parseMaterial(Array.from({length:201},(_,i)=>`Q: ${i}?\nA: a`).join('\n')),/200/);
   assert.throws(()=>createMaterialDeck({title:'큰 자료',category:'기타',cards:Array.from({length:15},()=>({question:'Q',answer:'가'.repeat(2000)}))},'blue'),/64KiB/);
 });

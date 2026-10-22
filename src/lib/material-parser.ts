@@ -40,7 +40,7 @@ const questionLike=/[?？]$|다음\s*중|것은\s*$|무엇|어떻|차이|설명|
 const choiceStart=/^(?:[1-9]\d?\s*(?:번\s*[,.)、]?|[.)、])|[①-⑳])\s*\S/u;
 function multipleChoices(line:string){return [...line.matchAll(/(?:^|\s)(?:[1-9]\d?\s*(?:번\s*[,.)、]?|[.)、])|[①-⑳])\s*\S/gu)].length>=2;}
 export function parseMaterial(source:string):{cards:MaterialCard[];classification:Classification;warnings:string[]} {
-  if(source.length>60000)throw new Error('자료는 60,000자까지입니다. 나누어 입력해 주세요.');
+  if(source.length>15000)throw new Error('자료는 15,000자까지입니다. 나누어 입력해 주세요.');
   const lines=source.replace(/\r\n?/g,'\n').split('\n');
   const following:string[]=[];let nextText='';for(let i=lines.length-1;i>=0;i--){following[i]=nextText;if(lines[i].trim())nextText=lines[i].trim();}
   type Draft={question:string[];answer:string[];explanation:string[];field:'question'|'answer'|'explanation';choices:boolean;explicitAnswer:boolean};
