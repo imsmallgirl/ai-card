@@ -7,6 +7,7 @@ import { LogIn, LogOut, ShieldCheck, X } from 'lucide-react';
 import { firebaseConfigured, getFirebaseAuth } from '@/lib/firebase';
 import { useAuth } from '@/components/auth-provider';
 import UserAvatar from '@/components/user-avatar';
+import { useWebAnalytics } from './web-analytics-provider';
 
 function errorMessage(error: unknown) {
   if (!(error instanceof FirebaseError)) return '로그인 중 문제가 발생했습니다. 다시 시도해 주세요.';
@@ -25,6 +26,7 @@ function errorMessage(error: unknown) {
 
 export default function AuthAccount({ variant = 'header', label }: { variant?: 'header' | 'sidebar' | 'login' | 'cta'; label?: string }) {
   const { user, checking, error: authError } = useAuth();
+  const webAnalytics = useWebAnalytics();
   const titleId = useId();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -57,6 +59,7 @@ export default function AuthAccount({ variant = 'header', label }: { variant?: '
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(getFirebaseAuth(), provider);
+      webAnalytics.track({ name: 'login' }, `login:${crypto.randomUUID()}`);
       setOpen(false);
     } catch (error) { setError(errorMessage(error)); }
     finally { setPending(false); }

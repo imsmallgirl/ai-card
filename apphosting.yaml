@@ -86,3 +86,22 @@ env:
 # AI activation requires a separately approved rollout.
 # Set SITE_OPERATOR_NAME and SUPPORT_EMAIL before inviting testers.
 # Keep PRIVACY_POLICY_CONFIRMED=false until the policy has been reviewed.
+
+# Operator confirmed Enhanced Measurement and automatic history tracking OFF.
+# Collection remains gated by visitor consent; push/rollout need approval.
+# Before confirming, disable Enhanced Measurement (forms/search/history/outbound)
+# and review Google Signals, user-provided data and linked tag destinations.
+
+
+  - variable: NEXT_PUBLIC_GA4_ENABLED
+    value: "true"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_GA4_MANUAL_ONLY_CONFIRMED
+    value: "true"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_GA4_MEASUREMENT_ID
+    value: "G-RG4PEMXJC9"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_SITE_ORIGIN
+    value: "https://moa-web--ai-card-92a13.asia-east1.hosted.app"
+    availability: [BUILD, RUNTIME]

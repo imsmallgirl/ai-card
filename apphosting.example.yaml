@@ -65,3 +65,21 @@ env:
   # - variable: GEMINI_API_KEY
   #   secret: moa-gemini-api-key
   #   availability: [RUNTIME]
+
+# GA4 web collection stays OFF until separate collection/deployment approval.
+# Before confirming, disable Enhanced Measurement (forms/search/history/outbound)
+# and review Google Signals, user-provided data and linked tag destinations.
+
+
+  - variable: NEXT_PUBLIC_GA4_ENABLED
+    value: "false"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_GA4_MANUAL_ONLY_CONFIRMED
+    value: "false"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_GA4_MEASUREMENT_ID
+    value: "G-YOUR_MEASUREMENT_ID"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_SITE_ORIGIN
+    value: "https://YOUR_DOMAIN"
+    availability: [BUILD, RUNTIME]

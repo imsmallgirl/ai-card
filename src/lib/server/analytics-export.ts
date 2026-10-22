@@ -5,6 +5,8 @@ import { claimAnalyticsEvent, acknowledgeAnalyticsEvent } from './analytics-serv
 
 export type AnalyticsSender = (clientId: string, event: AnalyticsEvent, signal: AbortSignal) => Promise<boolean>;
 export function createGa4Sender(env: Record<string, string | undefined>, fetcher: typeof fetch = fetch): AnalyticsSender | null {
+  // Use one GA4 delivery path; browser flow events must not be counted again by MP.
+  if (env.NEXT_PUBLIC_GA4_ENABLED === 'true') return null;
   if (env.ANALYTICS_ENABLED !== 'true' || env.ANALYTICS_EXPORT_ENABLED !== 'true' || !/^G-[A-Z0-9]+$/.test(env.GA4_MEASUREMENT_ID || '') || !env.GA4_API_SECRET?.trim()) return null;
   // No browser SDK, page URL, Firebase UID or user_id. Secret is server-only and never logged.
   return async (clientId, raw, signal) => {

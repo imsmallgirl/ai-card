@@ -32,10 +32,10 @@ export default function AnalyticsProvider({ children }: { children: React.ReactN
   // Auth can change before effects clean up. Never expose old user's consent or event client.
   const current = user && stateUid === user.uid ? state : initial;
   return <AnalyticsContext.Provider value={{ track: async (action, count) => { if (user?.uid === stateUid) await client.current?.track(action, count); } }}>
-    {children}<ConsentSettings loggedIn={Boolean(user)} state={current}
+    {children}{process.env.NEXT_PUBLIC_GA4_ENABLED!=='true'&&<ConsentSettings loggedIn={Boolean(user)} state={current}
       configured={process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true'}
       onChoose={granted => { const currentClient = client.current; if (user?.uid === stateUid && currentClient) void currentClient.choose(granted).then(() => currentClient.track('visit')); }}
-      onRetry={() => { void client.current?.reload(); }}/>
+      onRetry={() => { void client.current?.reload(); }}/ >}
   </AnalyticsContext.Provider>;
 }
 export function useAnalytics() { return useContext(AnalyticsContext); }

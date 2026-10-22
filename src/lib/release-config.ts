@@ -1,3 +1,4 @@
+import { webAnalyticsConfig } from './web-analytics-model.ts';
 type Finding={level:'error'|'warning';code:string;message:string};
 export function releaseConfig(env:Record<string,string|undefined>):Finding[] {
   const findings:Finding[]=[];
@@ -20,6 +21,7 @@ export function releaseConfig(env:Record<string,string|undefined>):Finding[] {
   try{const url=new URL(env.SITE_URL||'');if(url.protocol!=='https:'||url.username||url.password||url.hostname==='localhost'||url.hostname==='127.0.0.1'||url.pathname!=='/'||url.search||url.hash)throw new Error();}catch{add('SITE_URL_REQUIRED','SITE_URL에 운영 HTTPS origin을 설정하세요.');}
   if(env.SUPPORT_EMAIL&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.SUPPORT_EMAIL))add('INVALID_CONTACT','SUPPORT_EMAIL의 이메일 형식을 확인하세요.');
   if(env.PRIVACY_POLICY_CONFIRMED!=='true')add('POLICY_REVIEW_REQUIRED','운영 정보·보관/삭제 정책을 검토한 뒤 PRIVACY_POLICY_CONFIRMED=true로 설정하세요.');
-  if(env.ANALYTICS_ENABLED==='true'||env.ANALYTICS_EXPORT_ENABLED==='true'||env.NEXT_PUBLIC_ANALYTICS_ENABLED==='true')add('ANALYTICS_REVIEW','선택적 분석이 활성화되어 있습니다. 동의·외부 전송 설정을 별도로 검증하세요.','warning');
+  if(env.NEXT_PUBLIC_GA4_ENABLED==='true'&&!webAnalyticsConfig(env).enabled)add('GA4_PREFLIGHT_REQUIRED','GA4 측정 ID·공개 origin·수동 측정 검토 확인이 필요합니다.');
+  if(env.ANALYTICS_ENABLED==='true'||env.ANALYTICS_EXPORT_ENABLED==='true'||env.NEXT_PUBLIC_ANALYTICS_ENABLED==='true'||env.NEXT_PUBLIC_GA4_ENABLED==='true')add('ANALYTICS_REVIEW','선택적 분석이 활성화되어 있습니다. 동의·외부 전송 설정을 별도로 검증하세요.','warning');
   return findings;
 }

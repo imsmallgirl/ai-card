@@ -1,4 +1,7 @@
 'use client';
+import { useWebAnalytics } from './web-analytics-provider';
+import { countBucket } from '@/lib/analytics-model';
+import { webScreen } from '@/lib/web-analytics-model';
 import { goalProgress } from '@/lib/study-goal';
 import { useEffect, useRef, useState } from 'react';
 import { assertReviewedDeck, regenerationState } from '@/lib/generation-review';
@@ -36,11 +39,23 @@ export default function StudyApp(){
  const [creationMode,setCreationMode]=useState<CreationMode>('material');
  const [editingDeckId,setEditingDeckId]=useState<string|null>(null);
  const editingDeck=decks.find(deck=>deck.id===editingDeckId);
- const {user}=useAuth(); const analytics=useAnalytics();
+ const {user}=useAuth(); const analytics=useAnalytics(); const webAnalytics=useWebAnalytics();
  const [purpose,setPurpose]=useState<'개념 암기'|'면접 준비'|'시험 대비'|'심화 이해'>('개념 암기');
  const [difficulty,setDifficulty]=useState<'초급'|'중급'|'고급'>('초급');
  const [questionCount,setQuestionCount]=useState('10');
  const [ready,setReady]=useState(false); const [view,setView]=useState('대시보드'); const [category,setCategory]=useState('전체'); const [search,setSearch]=useState('');
+ const screenVisit=useRef({name:'',sequence:0});
+ const reviewVisit=useRef('');
+ useEffect(()=>{
+   const screens:Record<string,string>={'대시보드':'dashboard','내 학습 덱':'decks','전체 복습':'review','학습 통계':'statistics','설정':'settings'};
+   const parsed=webScreen.safeParse(screens[view]);if(!parsed.success)return;
+   if(screenVisit.current.name!==view)screenVisit.current={name:view,sequence:screenVisit.current.sequence+1};
+   webAnalytics.track({name:'screen_view',screen_name:parsed.data},`screen:${performance.timeOrigin}:${screenVisit.current.sequence}`);
+ },[view,webAnalytics.granted,webAnalytics.track]);
+ function trackReviewStart(next:ReviewSession|null){
+   if(!next)return;reviewVisit.current=crypto.randomUUID();
+   webAnalytics.track({name:'review_started',count_bucket:countBucket(next.entries.length)},`review-start:${reviewVisit.current}`);
+ }
  const [modal,setModal]=useState(false); const [title,setTitle]=useState(''); const [text,setText]=useState(''); const [newCategory,setNewCategory]=useState('기타'); const [loading,setLoading]=useState(false); const [error,setError]=useState(''); const [notice,setNotice]=useState('');
  const completionIds=useRef(new Map<string,string>());const completedEntries=useRef(new Set<string>());const completionLock=useRef(false);
  const [completionBusy,setCompletionBusy]=useState(false);const [completionError,setCompletionError]=useState('');
@@ -53,11 +68,11 @@ export default function StudyApp(){
  const total=decks.reduce((n,d)=>n+d.cards.length,0); const due=decks.reduce((n,d)=>n+d.cards.filter(c=>c.due<=Date.now()).length,0);
  const start=(deck:Deck,quiz=false)=>{
   const dueEntries=collectReviewEntries([deck],!quiz);
-  completionIds.current.clear();completedEntries.current.clear();setCompletionError('');setSession(createReviewSession([deck],{dueOnly:!quiz&&dueEntries.length>0,quiz,title:deck.title}));setFlipped(false);setAnswer('');
+  completionIds.current.clear();completedEntries.current.clear();setCompletionError('');const next=createReviewSession([deck],{dueOnly:!quiz&&dueEntries.length>0,quiz,title:deck.title});trackReviewStart(next);setSession(next);setFlipped(false);setAnswer('');
  };
  const syncedDecks=sync?.mode==='cloud'?decks.filter(deck=>deck.storage==='local'||deck.cards.every(card=>card.revision!==undefined)):decks;
- const startAll=(options:{dueOnly:boolean;shuffle:boolean;quiz:boolean;deckIds:string[];filter?:'all'|'favorite'|'wrong'})=>{
-  completionIds.current.clear();completedEntries.current.clear();setCompletionError('');setSession(createReviewSession(syncedDecks,{...options,title:options.dueOnly?'오늘의 선택 덱 복습':'선택한 덱 복습'}));setFlipped(false);setAnswer('');
+ const startAll=(options:{dueOnly:boolean;shuffle:boolean;quiz:boolean;deckIds:string[]})=>{
+  completionIds.current.clear();completedEntries.current.clear();setCompletionError('');const next=createReviewSession(syncedDecks,{...options,title:options.dueOnly?'오늘의 선택 덱 복습':'선택한 덱 복습'});trackReviewStart(next);setSession(next);setFlipped(false);setAnswer('');
  };
  async function nextCard(){
    if(!session||completionLock.current||session.position>=session.entries.length)return;
@@ -69,6 +84,7 @@ export default function StudyApp(){
        let id=completionIds.current.get(key);if(!id){id=crypto.randomUUID();completionIds.current.set(key,id);}
        await completeCard(entry.deckId,entry.index,id,entry.card);completedEntries.current.add(key);
      }
+     if(session.position+1===session.entries.length)webAnalytics.track({name:'review_completed',count_bucket:countBucket(session.entries.length)},`review-complete:${reviewVisit.current}`);
      setSession({...session,position:session.position+1});setFlipped(false);setAnswer('');
    }catch(cause){setCompletionError(cause instanceof Error?cause.message:'학습 완료를 저장하지 못했습니다. 다시 시도해 주세요.');}
    finally{completionLock.current=false;setCompletionBusy(false);}
@@ -111,7 +127,7 @@ export default function StudyApp(){
    if(!result){let data:unknown;
     if(resuming){try{data=await generationFetch(refresh=>user.getIdToken(refresh),`/api/generation-requests/${pending.id}`,signal);}catch(cause){if(!(cause instanceof GenerationClientError)||cause.status!==404)throw cause;}}
     if(!data)data=await generationFetch(refresh=>user.getIdToken(refresh),'/api/generate',signal,pending);
-    result=generationClientResult.parse(data);preserveGeneration({...pending,result});setNotice('AI 결과를 확인하고 저장해 주세요. 아직 덱에 저장되지 않았습니다.');return;}
+    result=generationClientResult.parse(data);webAnalytics.track({name:'card_generation_completed',method:'ai',count_bucket:countBucket(result.cards.length)},`generated:${pending.id}`);preserveGeneration({...pending,result});setNotice('AI 결과를 확인하고 저장해 주세요. 아직 덱에 저장되지 않았습니다.');return;}
    if(signal.aborted)return;if(result.usage)setUsage(result.usage);
    // Deterministic deck ID makes save retries safe too (cloud outbox de-duplicates this ID).
    result=generationClientResult.parse(result);
@@ -119,12 +135,13 @@ export default function StudyApp(){
    if(pending.target){
      const target=decks.find(deck=>deck.id===pending.target!.deckId);const current=target?.cards[pending.target.index];
      if(regenerationState(pending.target,current,result.cards[0])==='apply'){if(!updateCard||!current)throw new Error('카드 수정 기능을 사용할 수 없습니다.');await updateCard(target!.id,pending.target.index,result.cards[0].question,result.cards[0].answer,{...current,revision:pending.target.revision},result.cards[0]);}
-     clearGeneration();setModal(false);setNotice('카드를 재생성하고 저장했습니다. 복습 일정은 초기화되었습니다.');return;
+     webAnalytics.track({name:'cards_saved',method:'ai',count_bucket:'1-5'},`saved-regeneration:${pending.id}`);clearGeneration();setModal(false);setNotice('카드를 재생성하고 저장했습니다. 복습 일정은 초기화되었습니다.');return;
    }
    const deckId=`ai-${pending.id}`;
    assertReviewedDeck(decks.find(deck=>deck.id===deckId),result.cards);
    if(!decks.some(deck=>deck.id===deckId))await addDeck({id:deckId,title:pending.input.title,category:pending.input.category,purpose:pending.input.purpose,difficulty:pending.input.difficulty,color:['purple','green','orange','blue'][decks.length%4],created:Date.now(),cards:result.cards.map(card=>({...card,due:0,interval:0}))});
    await confirmDeck?.(deckId);
+   webAnalytics.track({name:'cards_saved',method:'ai',count_bucket:countBucket(result.cards.length)},`saved:${deckId}`);
    if(signal.aborted)return;
    if(sync?.mode!=='cloud')void analytics.track('local_deck_created',result.cards.length);
    clearGeneration();setModal(false);setTitle('');setText('');setSearch('');setCategory('전체');setNotice('');setView('내 학습 덱');
@@ -138,7 +155,7 @@ export default function StudyApp(){
    preserveGeneration({id:crypto.randomUUID(),input,target:{deckId:deck.id,cardId:card.id,index,revision:card.revision,originalQuestion:card.question,originalAnswer:card.answer}});
    setTitle(input.title);setText(input.text);setQuestionCount('1');setNewCategory(input.category);setEditingDeckId(null);setCreationMode('ai');setError('');setModal(true);
  }
- const onManualSaved=(deck:Deck)=>{setModal(false);setSearch('');setCategory('전체');setView('내 학습 덱');setNotice('');if(sync?.mode!=='cloud')void analytics.track('local_deck_created',deck.cards.length);};
+ const onManualSaved=(deck:Deck,source?:'rules'|'ai')=>{const method=source||(deck.id.startsWith('manual-')?'manual':'rules');if(method==='manual')webAnalytics.track({name:'card_generation_completed',method,count_bucket:countBucket(deck.cards.length)},`generated:${deck.id}`);webAnalytics.track({name:'cards_saved',method,count_bucket:countBucket(deck.cards.length)},`saved:${deck.id}`);setModal(false);setSearch('');setCategory('전체');setView('내 학습 덱');setNotice('');if(sync?.mode!=='cloud')void analytics.track('local_deck_created',deck.cards.length);};
  const creationDialogRef=useRef<HTMLElement>(null);const reviewDialogRef=useRef<HTMLElement>(null);
  useDialogAccessibility(creationDialogRef,modal&&creationMode==='ai',closeCreation,loading);
  useDialogAccessibility(reviewDialogRef,Boolean(session),()=>setSession(null),completionBusy);
@@ -168,7 +185,7 @@ export default function StudyApp(){
  {modal&&creationMode==='ai'&&<div className="overlay" onClick={()=>!loading&&closeCreation()}><section ref={creationDialogRef} className="modal" role="dialog" aria-modal="true" aria-labelledby="create-title" onClick={e=>e.stopPropagation()}><button className="close" aria-label="닫기" disabled={loading} onClick={closeCreation}><X size={21}/></button><span className="modal-icon"><Sparkles/></span><h2 id="create-title">새로운 배움을 모아볼까요?</h2><p>제목과 카테고리만 입력하면 AI가 학습 카드를 만들어요.</p><DeckCreationMode value="ai" change={setCreationMode} disabled={loading}/><AiUsage provider={aiProvider} model={aiModel} usage={usage} error={pendingReadError?'이전 AI 요청 데이터를 읽을 수 없어 새 생성을 잠갔습니다. 원본은 보존되어 있습니다.':usageError} onRetry={()=>void refreshUsage()}/>{pendingGeneration&&<p className="generation-pending">이전 요청이 보존되어 있습니다. 다시 누르면 같은 요청을 확인하며, 성공 결과는 AI를 재호출하지 않습니다.</p>}<form onSubmit={generate}><fieldset className="generation-fields" hidden={Boolean(pendingGeneration?.result)} disabled={loading||pendingReadError||Boolean(pendingGeneration)}><label>학습 덱 이름<input autoFocus required maxLength={80} value={title} onChange={e=>setTitle(e.target.value)} placeholder="예: 고등학교 생물 — 세포 소기관"/></label><label>카테고리<select value={newCategory} onChange={e=>setNewCategory(e.target.value)}>{categories.slice(1).map(c=><option key={c}>{c}</option>)}</select></label><label>학습 목적<select value={purpose} onChange={event=>setPurpose(event.target.value as typeof purpose)}>{['개념 암기','면접 준비','시험 대비','심화 이해'].map(item=><option key={item}>{item}</option>)}</select></label><label>난이도<select value={difficulty} onChange={event=>setDifficulty(event.target.value as typeof difficulty)}>{['초급','중급','고급'].map(item=><option key={item}>{item}</option>)}</select></label><fieldset className="question-count"><legend>질문 수</legend><div className="count-presets">{[5,10,15,20].map(count=><button type="button" key={count} aria-pressed={Number(questionCount)===count} className={Number(questionCount)===count?'selected':''} disabled={loading} onClick={()=>setQuestionCount(String(count))}>{count}개</button>)}</div><label className="count-custom">직접 입력<input type="number" required min={1} max={20} step={1} value={questionCount} onChange={event=>setQuestionCount(event.target.value)} disabled={loading} aria-label="생성할 질문 수"/>개</label><small>1~20개까지 선택할 수 있어요. 참고 자료가 부족하면 더 적게 생성될 수 있습니다.</small></fieldset><label>참고 자료 (선택)<textarea maxLength={15000} rows={4} value={text} onChange={e=>setText(e.target.value)} placeholder="비워 두면 제목과 카테고리로 생성해요. 특정 범위를 공부하려면 노트나 교재 내용을 붙여 넣어 주세요."/></label></fieldset>{pendingGeneration?.result&&<GeneratedPreview cards={pendingGeneration.result.cards} locked={loading||Boolean(pendingGeneration.saving)} change={cards=>{const pending=generationPending.current;if(pending?.result)try{preserveGeneration({...pending,result:{...pending.result,cards}});}catch{setError('검토 내용을 보존하지 못했습니다. 브라우저 저장 공간을 확인해 주세요.');}}}/>}<small>실제 AI 모드에서는 제목·카테고리와 참고 자료가 Google Gemini로 전송됩니다. 개발 Mock 모드에서는 외부 AI로 전송하지 않습니다. 실패 복구를 위해 입력과 결과를 이 브라우저에 임시 보존하며, 저장 성공 또는 요청 해제 시 제거합니다. AI 내용은 확인해 주세요.</small>{error&&<p className="error" role="alert">{error}</p>}{failedGeneration&&pendingGeneration&&!pendingGeneration.result&&<div role="status"><p>이전 생성 요청은 실패로 종료되었습니다. 같은 요청을 조회해도 새 덱은 생성되지 않습니다. 입력 내용을 유지하고 새 요청을 준비할 수 있습니다.</p><button type="button" className="soft-button" disabled={loading} onClick={prepareNewGeneration}>{aiProvider==='mock'?'같은 내용으로 새 Mock 요청 준비':'같은 내용으로 새 요청 준비'}</button></div>}<button disabled={loading||pendingReadError||(!pendingGeneration&&usage?.remaining===0)||failedGeneration} className="primary generate" type="submit"><Sparkles size={17}/>{loading?pendingGeneration?.result?'저장하는 중…':'AI가 카드를 만드는 중… 잠시만 기다려 주세요':pendingGeneration?.result?'검토한 카드 저장하기':failedGeneration?'종료된 요청 · 새 요청을 준비해 주세요':pendingGeneration?'같은 요청 확인 / 저장 재시도':usage?.remaining===0?'오늘의 무료 생성을 모두 사용했어요':aiProvider==='mock'?'Mock 카드 만들기':'AI로 학습 카드 만들기'}</button>{pendingGeneration&&<button type="button" className="soft-button" disabled={loading} onClick={()=>{if(window.confirm('보존된 요청 연결을 해제할까요? 서버에서 진행 중인 호출이나 이미 차감된 사용량은 취소되지 않습니다. 저장하지 않은 결과는 이 화면에서 사라집니다.')){try{clearGeneration();setError('');}catch{setError('이전 요청 연결을 해제하지 못했습니다.');}}}}>다른 내용으로 새 요청 준비</button>}</form><AiLoadingOverlay active={loading} label={pendingGeneration?.result?'카드를 저장하고 있어요':'AI가 학습 카드를 만들고 있어요'}/></section></div>}
  {session&&<div className="overlay"><section ref={reviewDialogRef} className="modal review-modal" role="dialog" aria-modal="true" aria-labelledby="review-title">
    <button className="close" aria-label="학습 종료" disabled={completionBusy} onClick={()=>setSession(null)}><X size={21}/></button>
-   {session.position>=session.entries.length?<StudyCompletion title={session.title} count={completedEntries.current.size} today={todayReviews} goal={dailyGoal} close={()=>{setSession(null);setView('대시보드');}} again={()=>{completionIds.current.clear();completedEntries.current.clear();setCompletionError('');setSession({...session,position:0});setFlipped(false);setAnswer('');}}/>:<>
+   {session.position>=session.entries.length?<StudyCompletion title={session.title} count={completedEntries.current.size} today={todayReviews} goal={dailyGoal} close={()=>{setSession(null);setView('대시보드');}} again={()=>{trackReviewStart(session);completionIds.current.clear();completedEntries.current.clear();setCompletionError('');setSession({...session,position:0});setFlipped(false);setAnswer('');}}/>:<>
      <h2 id="review-title">{session.title}</h2>
      <div className="review-progress"><span>{session.position+1} / {session.entries.length}</span></div>
      <div className="flashcard"><span>{flipped?'정답':'질문'}</span><h3>{flipped?session.entries[session.position].card.answer:session.entries[session.position].card.question}</h3>
